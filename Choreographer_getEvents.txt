@@ -1,0 +1,70 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipant underline
+'scale 0.9
+autonumber "<b>(<u>##</u>)</b>"
+
+activate "Looper(Native)"
+"Looper(Native)" -> "Looper(Native)" : <b> <color OrangeRed>pollInner()</color>
+activate "Looper(Native)"
+"Looper(Native)" -> DisplayEventDispatcher : response.request.callback->handleEvent()
+deactivate "Looper(Native)"
+deactivate "Looper(Native)"
+
+activate DisplayEventDispatcher
+DisplayEventDispatcher -> DisplayEventDispatcher :processPendingEvents()
+activate DisplayEventDispatcher
+deactivate DisplayEventDispatcher
+deactivate DisplayEventDispatcher
+
+DisplayEventDispatcher -> android_view_DisplayEventReceiver : dispatchVsync()
+activate DisplayEventDispatcher
+deactivate DisplayEventDispatcher
+
+
+activate android_view_DisplayEventReceiver
+android_view_DisplayEventReceiver -> "DisplayEventReceiver(Java)" : dispatchVsync()
+deactivate android_view_DisplayEventReceiver
+
+activate "DisplayEventReceiver(Java)"
+"DisplayEventReceiver(Java)" -> FrameDisplayEventReceiver : onVsync()
+deactivate "DisplayEventReceiver(Java)"
+
+activate FrameDisplayEventReceiver
+FrameDisplayEventReceiver -> FrameHandler : mHandler.sendMessageAtTime()
+deactivate FrameDisplayEventReceiver
+
+activate FrameHandler
+FrameHandler -> Choreographer : doFrame()
+deactivate FrameHandler
+
+activate Choreographer
+Choreographer -> Choreographer : doCallbacks()
+
+rnote left
+<b>按如下顺序执行不同类型的回调</b>
+// 最高优先级的输入事件类型的callback
+int <b><color DarkOrange>CALLBACK_INPUT</color></b> = 0;
+// 动画更新类型的Callback
+int <b><color DarkOrange>CALLBACK_ANIMATION</color></b> = 1;
+// insets动画更新类型的Callback
+int <b><color DarkOrange>CALLBACK_INSETS_ANIMATION</color></b> = 2;
+// 视图遍历更新类型的Callback
+int <b><color DarkOrange>CALLBACK_TRAVERSAL</color></b> = 3; 
+// 在视图遍历回调处理完之后的Callback
+int <b><color DarkOrange>CALLBACK_COMMIT</color></b> = 4; 
+end note
+
+activate Choreographer
+Choreographer -> ViewRootImpl : CallbackRecord.run()
+deactivate Choreographer
+deactivate Choreographer
+
+activate ViewRootImpl
+ViewRootImpl -> ViewRootImpl : doTraversal()
+activate ViewRootImpl
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+
+
+@enduml

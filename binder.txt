@@ -1,0 +1,130 @@
+@startuml
+class RefBase {
+      +incStrong():void 
+      +decStrong():void 
+}
+
+class IInterface extends RefBase {
+      +{static} sp<IBinder> asBinder()
+      ~IBinder* onAsBinder()
+}
+
+class IXXX extends IInterface {
+      IMediaPlayer
+      ICamera
+      +{static}::android::sp<IXXX> asInterface()
+}
+
+class IXXXClient extends IInterface {
+   IMediaPlayerClient
+   ICameraClient   
+      +{static}::android::sp<IXXXClient> asInterface()
+}
+
+class IXXXService extends IInterface {
+   IMediaPlayerService
+   ICameraService
+   +{static}::android::sp<IXXXService> asInterface()
+}
+
+class BpRefBase extends RefBase {
+      +remote():IBinder*
+      -IBinder* mRemote
+}
+
+class IBinder extends RefBase {
+ +status_t transact()
+ +localBinder():BBinder*
+ +remoteBinder():BpBinder*
+}
+
+class BBinder extends IBinder {
+ ~onTransact():status_t
+}
+
+class BpBinder extends IBinder {
+ -int32_t mHandle;
+ +transact():status_t
+ +handle():int32_t
+}
+
+class ProcessState<<进程状态>> extends RefBase {
+       -int mDriverFD;
+       -void* mVMStart;
+       -size_t mExecutingThreadsCount;
+       -size_t mMaxThreads;
+       +void startThreadPool();
+       +bool becomeContextManager();
+       +sp<IBinder> getStrongProxyForHandle();
+       +wp<IBinder> getWeakProxyForHandle();
+}
+
+ProcessState <-- IPCThreadState
+class IPCThreadState<<线程状态>> {
+ -sp<ProcessState> mProcess
+ +sp<ProcessState> process()
+}
+
+class XXX #lightblue {
+ MediaPlayer
+ Camera
+ -sp<IMediaPlayer> mPlayer
+}
+class IXXX #lightblue
+class IXXXService #lightblue
+class IXXXClient #lightblue
+class BpXXX #lightblue
+class BnXXX #lightblue
+class XXXService #lightblue
+class BpXXXService #lightblue
+class BnXXXService #lightblue
+class BpXXXClient #lightblue
+class BnXXXClient #lightblue
+
+BpRefBase <|-[#Purple,Bold]- BpInterface
+BpInterface : ~onAsBinder():IBinder*
+
+BBinder <|-[#Orange,Bold]- BnInterface
+BnInterface : ~onAsBinder():IBinder*
+
+BnXXXService <|-[#Blue,Bold]- XXXService
+XXXService : MediaPlayerService
+XXXService : CameraService
+
+BnXXXClient <|-[#Red,Bold]- XXX
+IMediaDeathNotifier  <|-[#Red,Bold]- XXX
+RefBase <|-- IMediaDeathNotifier
+IMediaDeathNotifier : +{static} sp<IMediaPlayerService> getMediaPlayerService()
+IMediaDeathNotifier : -sp<IMediaPlayerService> sMediaPlayerService;
+
+IXXX <|-[#Green,Bold]- BpInterface
+IXXXClient <|-[#Red,Bold]- BpInterface
+IXXXService <|-[#Blue,Bold]- BpInterface
+
+IXXX <|-[#Green,Bold]- BnInterface
+IXXXClient <|-[#Red,Bold]- BnInterface
+IXXXService <|-[#Blue,Bold]- BnInterface
+
+BpInterface <|-[#Green,Bold]- BpXXX
+BnInterface <|-[#Green,Bold]- BnXXX
+BpXXX : BpMediaPlayer
+BpXXX : BpCamera
+BnXXX : BnMediaPlayer
+BnXXX : BnCamera
+
+BpInterface <|-[#Red,Bold]- BpXXXClient
+BnInterface <|-[#Red,Bold]- BnXXXClient
+BpXXXClient : BpMediaPlayerClient
+BpXXXClient : BpCameraClient
+BnXXXClient : BnMediaPlayerClient
+BnXXXClient : BnCameraClient
+
+BpInterface <|-[#Blue,Bold]- BpXXXService
+BnInterface <|-[#Blue,Bold]- BnXXXService
+BpXXXService : BpMediaPlayerService
+BpXXXService : BpCameraService
+BnXXXService : BnMediaPlayerService
+BnXXXService : BnCameraService
+
+BpBinder <.left. BpXXX
+@enduml

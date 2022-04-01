@@ -1,0 +1,99 @@
+@startuml
+set namespaceSeparator none
+
+class ActivityRecord extends WindowToken {
+}
+
+class ActivityStack extends Task {}
+
+
+
+
+abstract class Window {
+  +abstract void setContentView(int layoutResID)
+}
+class PhoneWindow extends Window {
+  +void setContentView(int layoutResID)
+}
+
+class Activity {
+  +void setContentView(int layoutResID)
+}
+
+PhoneWindow  <-- Activity
+
+
+class WindowContainer < E extents WindowContainer >{}
+abstract class ConfigurationContainer < E extends ConfigurationContainer > {}
+class DisplayArea < T extends WindowContainer >{}
+
+ConfigurationContainer <|-- WindowContainer
+'ConfigurationContainer <|-- WindowProcessController
+WindowContainer <|-- RootWindowContainer
+WindowContainer <|-- WindowState
+WindowContainer <|-- WindowToken
+WindowContainer <|-- Task
+WindowContainer <|-- DisplayArea
+WindowContainer <|-- DisplayContent
+
+'class ActivityStackSupervisor
+class ViewRootImpl {
+  +Display mDisplay
+  +DisplayManager mDisplayManager
+  +IWindowSession mWindowSession
+  +Choreographer mChoreographer
+}
+'class AppTransition
+'class AppTransitionController
+
+
+note as N1
+  1.Android R public类型的aidl文件生成的java文件的目录在
+  <b><color:royalBlue>out/soog/.intermediates/</color>
+  2.Android R中如果aidl文件被标记为hide，则需要通过aidl命令，
+  手动转换aidl文件到java文件,同级目录生成
+  <b><color:royalBlue>aidl -I./frameworks/base/core/java/</color>
+  <b><color:royalBlue>-p./prebuilts/sdk/current/public/framework.aidl</color>
+  <b><color:royalBlue>./frameworks/base/core/java/android/view/IWindowSession.aidl</color>
+  3.-p接的是预处理文件framework.aidl，其中会包含parcelable +java文件定义的包名
+end note
+
+class Session extends IWindowSession.Stub
+class WindowManagerService extends IWindowManager.Stub {
+  +openSession()
+  +relayoutWindow()
+}
+
+class WindowManagerGlobal {
+  -IWindowManager sWindowManagerService
+  -IWindowSession sWindowSession
+  +getWindowSession()
+  +addView()
+  +getWindowManagerService()
+}
+
+class Session {
+  +WindowManagerService mService;
+  +SurfaceSession mSurfaceSession;
+  +relayout()
+}
+
+WindowManagerGlobal <.. ViewRootImpl
+WindowManagerService <.. WindowManagerGlobal
+Session <.. WindowManagerService
+
+IWindowManager.Stub : +asInterface()
+
+
+class WindowManagerImpl implements WindowManager
+interface WindowManager extends ViewManager{}
+interface ViewManager {
+  +addView()
+  +updateViewLayout()
+  +removeView()
+}
+
+
+
+
+@enduml

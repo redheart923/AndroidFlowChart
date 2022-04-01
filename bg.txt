@@ -1,0 +1,25 @@
+@startuml
+
+start
+:Here is the result
+<#yellow>|= 分类 |= 窗口类型 |= 取值 |
+| 应用程序窗口，范围1-99 | FIRST_APPLICATION_WINDOW | row |
+|  | TYPE_BASE_APPLICATION  | row |
+|  | LAST_APPLICATION_WINDOW  | row |
+
+|  | FIRST_SUB_WINDOW | row |
+|  | LAST_SUB_WINDOW  | row |
+|  | FIRST_SYSTEM_WINDOW | row |
+|  | TYPE_STATUS_BAR | row |
+|  | TYPE_SEARCH_BAR | row |
+|  | TYPE_PHONE | row |
+|  | TYPE_SYSTEM_ALERT | row |
+|  | TYPE_KEYGUARD | row |
+|  | TYPE_TOAST | row |
+|  | TYPE_SYSTEM_OVERLAY | row |
+|  | TYPE_INPUT_METHOD | row |
+|  | TYPE_WALLPAPER | row |
+|  | TYPE_NAVIGATION_BAR | row |
+|<#FF8080> red |<#80FF80> green |<#8080FF> blue |
+| b | table | row |;
+@enduml

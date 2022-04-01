@@ -1,0 +1,115 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipant underline
+'scale 0.9
+autonumber "<b>(<u>##</u>)</b>"
+
+Choreographer -> Choreographer : new Choreographer()
+activate Choreographer
+Choreographer -> Choreographer : new FrameHandler()
+activate Choreographer
+deactivate Choreographer
+
+Choreographer -> Choreographer : new FrameDisplayEventReceiver()
+activate Choreographer
+
+Choreographer -> "DisplayEventReceiver(java)" : super()
+deactivate Choreographer
+deactivate Choreographer
+
+activate "DisplayEventReceiver(java)"
+"DisplayEventReceiver(java)" -> android_view_DisplayEventReceiver : nativeInit()
+
+note right
+将java层的DisplayEventReceiver传递给native层
+end note
+deactivate "DisplayEventReceiver(java)"
+activate android_view_DisplayEventReceiver
+
+
+android_view_DisplayEventReceiver -> DisplayEventDispatcher : receiver = new DisplayEventDispatcher()
+note right
+native层receiver
+end note
+activate android_view_DisplayEventReceiver
+deactivate android_view_DisplayEventReceiver
+
+activate DisplayEventDispatcher
+DisplayEventDispatcher -> "DisplayEventReceiver(cpp)" : mReceiver(vsyncSource, eventRegistration)
+deactivate DisplayEventDispatcher
+activate "DisplayEventReceiver(cpp)"
+
+
+
+
+
+
+
+"DisplayEventReceiver(cpp)" -> SurfaceFlinger : sf->createDisplayEventConnection()
+activate "DisplayEventReceiver(cpp)"
+activate SurfaceFlinger
+SurfaceFlinger -> SurfaceFlinger : handle(mSfConnectionHandle : mAppConnectionHandle)
+activate SurfaceFlinger
+deactivate SurfaceFlinger
+
+
+
+
+SurfaceFlinger -> Scheduler : createDisplayEventConnection()
+
+activate Scheduler
+Scheduler -> Scheduler : createConnectionInternal()
+activate Scheduler
+Scheduler -> EventThread : createEventConnection()
+
+
+activate EventThread
+EventThread -> EventThreadConnection :new EventThreadConnection()
+activate EventThreadConnection
+return
+return
+deactivate Scheduler
+return
+deactivate Scheduler
+return return IDisplayEventConnection(Bp)
+deactivate SurfaceFlinger
+deactivate EventThreadConnection
+deactivate EventThread
+
+
+deactivate "DisplayEventReceiver(cpp)"
+
+
+"DisplayEventReceiver(cpp)" -> BitTube : std::make_unique<gui::BitTube>()
+note left
+创建一对sockpairs,用于通知应用绘制
+end note
+activate "DisplayEventReceiver(cpp)"
+activate BitTube
+deactivate BitTube
+deactivate "DisplayEventReceiver(cpp)"
+
+"DisplayEventReceiver(cpp)" -> EventThreadConnection : mEventConnection->stealReceiveChannel()
+activate "DisplayEventReceiver(cpp)"
+deactivate "DisplayEventReceiver(cpp)"
+activate EventThreadConnection
+deactivate EventThreadConnection
+deactivate "DisplayEventReceiver(cpp)"
+
+android_view_DisplayEventReceiver -> DisplayEventDispatcher : receiver->initialize()
+activate android_view_DisplayEventReceiver
+deactivate android_view_DisplayEventReceiver
+deactivate android_view_DisplayEventReceiver
+
+activate DisplayEventDispatcher
+DisplayEventDispatcher -> DisplayEventDispatcher : mLooper->addFd(mReceiver.getFd()...)
+note left
+应用进程Looper添加native层mReceiveFd
+system/core/libutils/Looper.cpp
+Looper::pollInner()-->epoll_wait()
+end note
+activate DisplayEventDispatcher
+deactivate DisplayEventDispatcher
+deactivate DisplayEventDispatcher
+
+@enduml

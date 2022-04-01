@@ -1,0 +1,77 @@
+@startuml
+skinparam sequenceArrowThickness 2
+'skinparam roundcorner 20
+'skinparam maxmessagesize 60
+skinparam sequenceParticipant underline
+
+autonumber "<b>(<u>##</u>)"
+
+activate RootWindowContainer
+RootWindowContainer -> RootWindowContainer : performSurfacePlacementNoTrace()
+activate RootWindowContainer
+RootWindowContainer -> RootWindowContainer : applySurfaceChangesTransaction()
+activate RootWindowContainer
+deactivate RootWindowContainer
+
+RootWindowContainer -> RootWindowContainer : checkAppTransitionReady()
+activate RootWindowContainer
+
+RootWindowContainer -> AppTransitionController : handleAppTransitionReady()
+
+deactivate RootWindowContainer
+deactivate RootWindowContainer
+deactivate RootWindowContainer
+
+activate AppTransitionController
+AppTransitionController -> AppTransitionController : transitionGoodToGo()
+note right
+<b><color Green>system log:</color></b>
+<b><color Green>WindowManager: Checking %d opening apps</color></b>
+<b><color Green>WindowManager: WindowManager: Check opening app</color></b>
+<b><color Green>WindowManager: "****" GOOD TO GO</color></b>
+<b><color Green>WindowManager: handleAppTransitionReady: displayId...</color></b>
+end note
+activate AppTransitionController
+deactivate AppTransitionController
+
+AppTransitionController -> AppTransitionController : applyAnimations()
+activate AppTransitionController
+AppTransitionController -> AppTransitionController : applyAnimations()
+activate AppTransitionController
+AppTransitionController -> WindowContainer : applyAnimation()
+deactivate AppTransitionController
+deactivate AppTransitionController
+deactivate AppTransitionController
+
+activate WindowContainer
+WindowContainer -> WindowContainer : applyAnimationUnchecked()
+activate WindowContainer
+WindowContainer -> WindowContainer : getAnimationAdapter()
+
+activate WindowContainer
+WindowContainer -> WindowContainer : loadAnimation()
+activate WindowContainer
+deactivate WindowContainer
+deactivate WindowContainer
+
+
+WindowContainer -> WindowContainer : startAnimation()
+activate WindowContainer
+WindowContainer -> SurfaceAnimator : mSurfaceAnimator.startAnimation()
+deactivate WindowContainer
+deactivate WindowContainer
+deactivate WindowContainer
+
+activate SurfaceAnimator
+SurfaceAnimator -> SurfaceAnimator : createAnimationLeash()
+activate SurfaceAnimator
+deactivate SurfaceAnimator
+
+SurfaceAnimator -> SurfaceAnimator : mAnimation.startAnimation()
+activate SurfaceAnimator
+deactivate SurfaceAnimator
+
+deactivate SurfaceAnimator
+
+@enduml
+

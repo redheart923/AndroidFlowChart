@@ -1,0 +1,37 @@
+@startuml
+autonumber "(##)"
+
+ActivityThread -> ActivityThread : handleResumeActivity()
+activate ActivityThread
+ActivityThread -> ActivityThread : performResumeActivity()
+activate ActivityThread
+ActivityThread -> Activity : r.activity.performResume()
+deactivate ActivityThread
+
+activate Activity
+Activity -> Instrumentation : mInstrumentation.callActivityOnResume
+deactivate Activity
+
+activate Instrumentation
+Instrumentation -> Mainactivity : activity.onResume()
+rnote left
+1.调用应用的onResume
+callActivityOnResume执行完成后打印
+<b><color Green>event log:</color></b>
+<b><color Green>wm_on_resume_called</color></b>
+end note
+activate Mainactivity
+deactivate Mainactivity
+deactivate Instrumentation
+
+
+ActivityThread -> WMS : wm.addView
+rnote right
+2.添加视图，请求绘制
+end note
+activate ActivityThread
+activate WMS
+deactivate WMS
+deactivate ActivityThread
+deactivate ActivityThread
+@enduml

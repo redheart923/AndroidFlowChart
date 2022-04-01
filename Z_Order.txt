@@ -1,0 +1,65 @@
+@startuml
+!theme aws-orange
+skinparam sequenceArrowThickness 2
+autonumber "<b>(<u>##</u>)"
+
+title: <size:20><&heart>Use of OpenIconic<&heart></size>
+
+WMS -> WMS : addWindow()
+activate WMS
+WMS -> WindowState : new WindowState()
+rnote right
+为每个窗口创建WindowState用来记录window 的状态
+end note
+activate WMS
+deactivate WMS
+deactivate WMS
+
+activate WindowState
+WindowState -> WindowManagerPolicy : mPolicy.getWindowLayerLw()
+deactivate WindowState
+
+activate WindowManagerPolicy
+WindowManagerPolicy -> WindowManagerPolicy : getWindowLayerFromTypeLw()
+activate WindowManagerPolicy
+deactivate WindowManagerPolicy
+deactivate WindowManagerPolicy
+
+
+rnote left
+<color #7FFFD4>确定主序和子序</color>
+** <color #7FFFD4>对于父窗口，主序取决于其类型，子序则为0；</color>
+** <color #7FFFD4>对于子窗口，主序与父窗口一致，子序取决于子窗口类型;</color>
+
+TYPE_LAYER_MULTIPLIER = 10000;
+TYPE_LAYER_OFFSET = 1000;
+mBaseLayer = mPolicy.getWindowLayerLw(parentWindow)
+                    * TYPE_LAYER_MULTIPLIER + TYPE_LAYER_OFFSET;
+<b><color Yellow>比如</color></b>
+<color #7FFFD4>$ dumpsys window -a | egrep "mBaseLayer|Window #" --color</color>
+<color Yellow>Window #4 Window{f7ee886 u0 NavigationBar0}:</color>
+<color Yellow>mBaseLayer=241000 mSubLayer=0</color>
+// 主序，其值越大，在UI界面上越显示在前面
+<color Yellow>mBaseLayer = 24*10000+1000=241000</color>
+// 子序，其值越大，其显示在同mBaseLayer中的位置越靠前
+<color Yellow>mSubLayer=0</color>
+end note
+
+DisplayContent -> DisplayContent : assignWindowLayers()
+rnote left
+调整Z-Order
+end note
+activate DisplayContent
+DisplayContent -> DisplayContent : assignChildLayers()
+activate DisplayContent
+DisplayContent -> WindowContainer : assignChildLayers()
+deactivate DisplayContent
+deactivate DisplayContent
+
+activate WindowContainer
+WindowContainer -> WindowContainer : assignLayer()
+activate WindowContainer
+deactivate WindowContainer
+deactivate WindowContainer
+
+@enduml

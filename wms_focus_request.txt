@@ -1,0 +1,62 @@
+@startuml
+autonumber "(##)"
+
+Session -> Session : relayout()
+activate Session
+Session -> WMS : relayoutWindow()
+deactivate Session
+
+activate WMS
+WMS -> WMS : updateFocusedWindowLocked()
+
+activate WMS
+WMS -> RootWindowContainer : updateFocusedWindowLocked()
+deactivate WMS
+deactivate WMS
+
+activate RootWindowContainer
+RootWindowContainer -> DisplayContent : updateFocusedWindowLocked()
+note left 
+<b><color Green>system log:</color></b> 
+<b><color Green>Changing focus from null to ...</color></b>
+end note
+deactivate RootWindowContainer
+
+activate DisplayContent
+DisplayContent -> InputMonitor : setInputFocusLw()
+deactivate DisplayContent
+activate InputMonitor
+InputMonitor -> InputMonitor : updateInputWindowsLw()
+activate InputMonitor
+InputMonitor -> InputMonitor : scheduleUpdateInputWindows()
+activate InputMonitor
+InputMonitor -> InputMonitor : mAnimationHandler.post(mUpdateInputWindows)
+activate InputMonitor
+deactivate InputMonitor
+deactivate InputMonitor
+deactivate InputMonitor
+deactivate InputMonitor
+
+== Thread : android.anim ==
+
+InputMonitor -> InputMonitor : mUpdateInputWindows.run()
+
+activate InputMonitor
+InputMonitor -> InputMonitor : updateInputWindows()
+activate InputMonitor
+InputMonitor -> InputMonitor : updateInputFocusRequest()
+
+activate InputMonitor
+InputMonitor -> InputMonitor : requestFocus()
+note right 
+<b><color Green>events log:</color></b> 
+<b><color Green>input_focus: [Focus request...</color></b>
+end note
+activate InputMonitor
+deactivate InputMonitor
+deactivate InputMonitor
+deactivate InputMonitor
+deactivate InputMonitor
+
+
+@enduml

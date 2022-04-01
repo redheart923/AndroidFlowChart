@@ -1,0 +1,118 @@
+@startuml
+autonumber "(##)"
+
+
+ViewRootImpl -> ViewRootImpl : draw()
+activate ViewRootImpl
+ViewRootImpl -> ViewRootImpl : scrollToRectOrFocus()
+activate ViewRootImpl
+deactivate ViewRootImpl
+
+ViewRootImpl -> ViewRootImpl : mAttachInfo.mTreeObserver.dispatchOnDraw()
+activate ViewRootImpl
+deactivate ViewRootImpl
+
+ViewRootImpl -> ThreadedRenderer : mAttachInfo.mThreadedRenderer.draw()
+rnote right
+硬件绘制<b><color OrangeRed>GPU</color></b>，取决于isHardwareEnabled()
+end note
+activate ViewRootImpl
+deactivate ViewRootImpl
+
+activate ThreadedRenderer
+ThreadedRenderer -> ThreadedRenderer : updateRootDisplayList()
+activate ThreadedRenderer
+deactivate ThreadedRenderer
+
+ThreadedRenderer -> HardwareRenderer : syncAndDrawFrame()
+activate ThreadedRenderer
+deactivate ThreadedRenderer
+deactivate ThreadedRenderer
+
+activate HardwareRenderer
+HardwareRenderer -> HardwareRenderer : nSyncAndDrawFrame()
+activate HardwareRenderer
+HardwareRenderer -> RenderProxy : JNI:syncAndDrawFrame()
+activate HardwareRenderer
+deactivate HardwareRenderer
+deactivate HardwareRenderer
+deactivate HardwareRenderer
+
+activate RenderProxy
+RenderProxy -> DrawFrameTask : drawFrame()
+deactivate RenderProxy
+
+activate DrawFrameTask
+DrawFrameTask -> DrawFrameTask : postAndWait()
+activate DrawFrameTask
+DrawFrameTask -> DrawFrameTask : DrawFrameTask::run()
+rnote left
+run()中的流程：
+1.为CanvasContext通过addFrameCompleteListener添加一个绘制完毕的回调
+2.调用<b><color OrangeRed>syncFrameState()</color></b>进行Layer的处理，判断是否需要阻塞ui线程。
+2.如果不需要阻塞线程，则在绘制之前调用unblockUiThread，把ui线程的阻塞先关闭。
+3.通过enqueueFrameWork回调，回调Java层添加的mFrameCallback监听。
+4.如果可以绘制当前这一帧，则调用CanvasContext的<b><color OrangeRed>draw()</color></b>绘制，否则说明硬件的绘制栏栅没有释放，需要对fence进行等待。
+5.如果需要阻塞线程，说明之前没有释放过阻塞，此时需要进行释放一次。
+end note
+activate DrawFrameTask
+DrawFrameTask -> DrawFrameTask : syncFrameState()
+activate DrawFrameTask
+DrawFrameTask -> CanvasContext : addFrameCompleteListener(std::move(mFrameCompleteCallback))
+activate CanvasContext
+deactivate CanvasContext
+deactivate DrawFrameTask
+
+DrawFrameTask -> CanvasContext : context->draw()
+rnote left
+进行硬件渲染
+end note
+activate DrawFrameTask
+deactivate DrawFrameTask
+
+deactivate DrawFrameTask
+deactivate DrawFrameTask
+deactivate DrawFrameTask
+
+activate CanvasContext
+CanvasContext -> CanvasContext : mRenderPipeline->getFrame()
+rnote left
+1.通过dequeueBuffer拿到一个buffer
+end note
+activate CanvasContext
+deactivate CanvasContext
+
+CanvasContext -> CanvasContext : mRenderPipeline->draw()
+rnote left
+2.调用Skia、OpenGL或Vulkun在buffer中进行绘制
+end note
+activate CanvasContext
+deactivate CanvasContext
+
+CanvasContext -> CanvasContext : mRenderPipeline->swapBuffers()
+rnote left
+3.通过queueBuffer提交buffer
+end note
+activate CanvasContext
+deactivate CanvasContext
+
+CanvasContext -> CanvasContext : std::invoke(func, frameCompleteNr)
+rnote left
+4.回调通知应用绘制完成
+auto& func : mFrameCompleteCallbacks
+end note
+activate CanvasContext
+deactivate CanvasContext
+
+deactivate CanvasContext
+
+'============Part 2===========
+ViewRootImpl -> ViewRootImpl : drawSoftware()
+rnote right
+软件绘制<b><color OrangeRed>CPU</color></b>，取决于isHardwareEnabled()
+end note
+activate ViewRootImpl
+deactivate ViewRootImpl
+
+deactivate ViewRootImpl
+@enduml

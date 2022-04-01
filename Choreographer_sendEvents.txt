@@ -1,0 +1,109 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipant underline
+'scale 0.9
+autonumber "<b>(<u>##</u>)</b>"
+
+activate ViewRootImpl
+ViewRootImpl -> ViewRootImpl : <b> <color OrangeRed>scheduleTraversals()</color>
+
+activate ViewRootImpl
+ViewRootImpl -> Choreographer : mChoreographer.postCallback()
+
+note right
+// 最高优先级的输入事件类型的callback
+int CALLBACK_INPUT = 0;
+// 动画更新类型的Callback
+int CALLBACK_ANIMATION = 1;
+// insets动画更新类型的Callback
+int CALLBACK_INSETS_ANIMATION = 2;
+// 视图遍历更新类型的Callback
+int CALLBACK_TRAVERSAL = 3; 
+// 在视图遍历回调处理完之后的Callback
+int CALLBACK_COMMIT = 4; 
+end note
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+
+activate Choreographer
+Choreographer -> Choreographer : postCallbackDelayed()
+activate Choreographer
+Choreographer -> Choreographer : postCallbackDelayedInternal()
+activate Choreographer
+Choreographer -> Choreographer : mCallbackQueues.addCallbackLocked
+activate Choreographer
+deactivate Choreographer
+
+Choreographer -> Choreographer : scheduleFrameLocked()
+activate Choreographer
+Choreographer -> Choreographer : scheduleVsyncLocked()
+activate Choreographer
+
+Choreographer -> DisplayEventReceiver : mDisplayEventReceiver.scheduleVsync()
+deactivate Choreographer
+deactivate Choreographer
+
+deactivate Choreographer
+deactivate Choreographer
+deactivate Choreographer
+
+activate DisplayEventReceiver
+DisplayEventReceiver -> android_view_DisplayEventReceiver : nativeScheduleVsync()
+deactivate DisplayEventReceiver
+
+activate android_view_DisplayEventReceiver
+android_view_DisplayEventReceiver -> DisplayEventDispatcher : scheduleVsync()
+deactivate android_view_DisplayEventReceiver
+
+activate DisplayEventDispatcher
+DisplayEventDispatcher -> DisplayEventDispatcher : processPendingEvents()
+note right
+处理对应的准备事件，如果获取到了
+Vsync信号的话，这里会返回true
+end note
+activate DisplayEventDispatcher
+deactivate DisplayEventDispatcher
+DisplayEventDispatcher -> DisplayEventReceiver : requestNextVsync()
+note right
+请求下一个Vsync信号
+end note
+activate DisplayEventDispatcher
+deactivate DisplayEventDispatcher
+deactivate DisplayEventDispatcher
+
+activate DisplayEventReceiver
+DisplayEventReceiver -> EventThreadConnection : mEventConnection->requestNextVsync()
+deactivate DisplayEventReceiver
+
+activate EventThreadConnection
+EventThreadConnection -> EventThread : requestNextVsync()
+deactivate EventThreadConnection
+
+activate EventThread
+EventThread -> EventThread : mConection.notify_all()
+activate EventThread
+deactivate EventThread
+
+EventThread -> EventThread : threadMain()
+activate EventThread
+EventThread -> EventThread : dispatchEvent()
+activate EventThread
+EventThread -> DisplayEventReceiver : sendEvents()
+deactivate EventThread
+deactivate EventThread
+deactivate EventThread
+
+activate DisplayEventReceiver
+DisplayEventReceiver -> BitTube : gui::BitTube::sendObjects
+deactivate DisplayEventReceiver
+
+activate BitTube
+BitTube -> BitTube : write()
+activate BitTube
+BitTube -> BitTube : ::send()
+activate BitTube
+deactivate BitTube
+deactivate BitTube
+deactivate BitTube
+
+@enduml

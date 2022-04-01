@@ -1,0 +1,43 @@
+@startuml
+autonumber "(##)"
+
+ATMS -> ATMS : setResumedActivityUncheckLocked()
+note right 
+<b><color Green>events log:</color></b> 
+<b><color Green>wm_set_resumed_activity</color></b>
+end note
+activate ATMS
+ATMS -> DisplayContent : setFocusedApp() 
+activate ATMS
+activate DisplayContent
+DisplayContent -> DisplayContent : setFocusedAppLw()
+activate DisplayContent
+deactivate DisplayContent
+deactivate ATMS
+deactivate DisplayContent
+
+
+ATMS-> WMS : updateFocusedWindowLocked()
+activate ATMS
+deactivate ATMS
+activate WMS
+deactivate ATMS
+
+WMS -> RootWindowContainer : updateFocusedWindowLocked()
+deactivate WMS
+activate RootWindowContainer
+RootWindowContainer -> DisplayContent : updateFocusedWindowLocked()
+note left 
+<b><color Green>system log:</color></b> 
+<b><color Green>Changing focus from ... to null</color></b>
+end note
+deactivate RootWindowContainer
+
+activate DisplayContent
+DisplayContent -> InputMonitor : setInputFocusLw()
+
+activate InputMonitor
+return
+deactivate DisplayContent
+
+@enduml

@@ -1,0 +1,41 @@
+@startuml
+autonumber "(##)"
+
+ViewRootImpl -> ViewRootImpl : performDraw()
+activate ViewRootImpl
+ViewRootImpl -> ViewRootImpl : addFrameCompleteCallbackIfNeeded()
+activate ViewRootImpl
+ViewRootImpl -> ViewRootImpl : createFrameCompleteCallback()
+activate ViewRootImpl
+ViewRootImpl -> ViewRootImpl : frameNr -> {}
+activate ViewRootImpl
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+
+ViewRootImpl -> ThreadedRenderer : setFrameCompleteCallback(frameNr -> {})
+activate ViewRootImpl
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+
+ThreadedRenderer -> HardwareRenderer : extends
+
+HardwareRenderer -> HardwareRenderer : nSetFrameCompleteCallback(mNativeProxy, callback)
+activate HardwareRenderer
+HardwareRenderer -> android_graphics_HardwareRenderer : android_view_ThreadedRenderer_setFrameCompleteCallback()
+deactivate HardwareRenderer
+
+activate android_graphics_HardwareRenderer
+android_graphics_HardwareRenderer -> RenderProxy : proxy->setFrameCompleteCallback()
+deactivate android_graphics_HardwareRenderer
+activate RenderProxy
+RenderProxy -> DrawFrameTask : setFrameCompleteCallback()
+deactivate RenderProxy
+note left
+// 此处设置callback
+mFrameCompleteCallback = std::move(callback)
+渲染流程中DrawFrameTask
+addFrameCompleteListener(std::move(mFrameCompleteCallback))
+endnote
+
+@enduml

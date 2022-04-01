@@ -1,0 +1,431 @@
+@startuml
+skinparam sequenceArrowThickness 2
+'skinparam roundcorner 20
+'skinparam maxmessagesize 60
+scale 1
+autonumber "<b>(<u>##</u>)"
+
+'用于排顺序
+participant ActivityThread
+participant WindowManagerImpl
+participant WindowManagerGlobal
+participant ViewRootImpl
+participant Session
+participant WMS
+participant WindowSurfacePlacer
+participant RootWindowContainer
+participant DisplayContent
+participant WindowContainer
+participant WindowState
+participant WindowStateAnimator
+participant WindowSurfaceController
+participant SurfaceControl
+participant SurfaceSession
+
+box "native侧调用" #LightBlue
+participant android_view_SurfaceControl #PaleGreen
+participant android_view_SurfaceSession #PaleGreen
+participant SurfaceComposerClient #PaleGreen
+participant Client #PaleGreen
+participant SurfaceFlinger #PaleGreen
+end box
+
+[->ActivityThread : handleResumeActivity()
+activate ActivityThread
+ActivityThread -> WindowManagerImpl : addView()
+deactivate ActivityThread
+
+activate WindowManagerImpl
+
+WindowManagerImpl -> WindowManagerGlobal : addView()
+deactivate WindowManagerImpl
+
+activate WindowManagerGlobal
+WindowManagerGlobal -> ViewRootImpl : new ViewRootImpl()
+note right #aqua
+<b> ViewRootImpl构造函数
+<b> 类成员:
+<b> new Surface()
+<b> new SurfaceControl()
+<b> new SurfaceSession()
+end note
+
+
+activate ViewRootImpl
+ViewRootImpl -> WindowManagerGlobal : getWindowSession()
+activate ViewRootImpl
+
+note left #aqua
+<b> 第一部分，
+<b> 创建session,用于与WMS通信
+end note
+
+
+activate WindowManagerGlobal
+
+WindowManagerGlobal -> WMS : openSession()
+activate WindowManagerGlobal
+
+activate WMS
+WMS -> Session : new Session()
+activate Session
+return
+return
+deactivate WindowManagerGlobal
+return session
+deactivate ViewRootImpl
+
+return root(ViewRootImpl)
+deactivate WindowManagerGlobal
+deactivate ViewRootImpl
+deactivate WindowManagerGlobal
+deactivate Session
+deactivate WMS
+
+WindowManagerGlobal -> ViewRootImpl : root.setView()
+
+note left #aqua
+<b> 第二部分，
+<b> 创建SufaceSession,
+<b> 建立和SF的联系
+end note
+
+
+activate WindowManagerGlobal
+deactivate WindowManagerGlobal
+
+'1
+activate ViewRootImpl
+ViewRootImpl -> ViewRootImpl : requestLayout()
+
+'2
+activate ViewRootImpl
+ViewRootImpl -> ViewRootImpl : <b> <color OrangeRed>scheduleTraversals()</color>
+note right #aqua
+<b> mChoreographer.postCallback(
+<b> Choreographer.CALLBACK_TRAVERSAL, 
+<b> mTraversalRunnable, null);
+<b> 调用Choreographer的postCallback方法
+<b> 参数1：CALLBACK_TRAVERSAL表示绘制和布局
+<b> 参数2：TraversalRunnable()，run方法为doTraversal
+end note
+activate ViewRootImpl
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+
+'==============================================start addToDisplayAsUser====================================================
+ViewRootImpl -> Session : addToDisplayAsUser()
+activate ViewRootImpl
+
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+
+
+activate Session
+Session -> WMS : <b> <color OrangeRed>addWindow()</color>
+deactivate Session
+
+activate WMS
+WMS -> WindowState : win.attach()
+deactivate WMS
+
+activate WindowState
+WindowState -> Session : mSession.windowAddedLocked()
+deactivate WindowState
+
+activate Session
+Session -> SurfaceSession : new SurfaceSession()
+note left
+创建SurfaceSession,用于跟SurfaceFlinger通信 
+end note
+deactivate Session
+
+activate SurfaceSession
+SurfaceSession -> android_view_SurfaceSession : nativeCreate()
+deactivate SurfaceSession
+
+activate android_view_SurfaceSession
+android_view_SurfaceSession -> SurfaceComposerClient : new SurfaceComposerClient
+deactivate android_view_SurfaceSession
+activate SurfaceComposerClient
+SurfaceComposerClient -> SurfaceComposerClient : onFirstRef()
+
+activate SurfaceComposerClient
+SurfaceComposerClient -> SurfaceFlinger : getService("SurfaceFlinger")
+activate SurfaceFlinger
+deactivate SurfaceFlinger
+deactivate SurfaceComposerClient
+
+SurfaceComposerClient ->SurfaceFlinger : sf->createConnection()
+
+activate SurfaceComposerClient
+activate SurfaceFlinger
+SurfaceFlinger -> SurfaceFlinger : new Client(this)
+activate SurfaceFlinger
+deactivate SurfaceFlinger
+deactivate SurfaceFlinger
+deactivate SurfaceComposerClient
+deactivate SurfaceComposerClient
+'==============================================end addToDisplayAsUser====================================================
+
+WindowManagerImpl --> ViewRootImpl : <b><color OrangeRed><size:16>VSync信号</size></color></b>
+ViewRootImpl -> ViewRootImpl : doTraversal()
+activate ViewRootImpl
+note right #aqua
+<b> <color Fuchsia><size:15>postCallback最终会处理Sync信号回调dispatchVsync->onVsync->doFrame</size></color>
+<b> <color Fuchsia><size:15>所以doTraversal并不是立即执行的，而是在VSync信号到来时才会执行绘制</size></color>
+<b> <color Fuchsia><size:15>那么addToDisplayAsUser中的addWindow方法比doTraversal先执行</size></color>
+end note
+activate ViewRootImpl #FFBBBB
+ViewRootImpl -> ViewRootImpl : performTraversals()
+
+activate ViewRootImpl 
+ViewRootImpl -> ViewRootImpl : <b><color OrangeRed>measureHierarchy()</color></b>
+note right
+<b>优化窗口测量值，达到更好的显示效果</b>
+此处会有三次调用performMeasure()方法
+前两次计算都未能达到最优显示，第三次
+调用使用实际值
+end note
+activate ViewRootImpl
+deactivate ViewRootImpl
+
+ViewRootImpl -> ViewRootImpl : relayoutWindow()
+activate ViewRootImpl #RoyalBlue
+ViewRootImpl -> Session : relayout()
+activate ViewRootImpl
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+
+activate Session
+Session -> WMS : relayoutWindow()
+deactivate Session
+
+activate WMS
+WMS -> WMS : createSurfaceControl()
+
+
+activate WMS
+WMS -> WindowStateAnimator : createSurfaceLocked()
+deactivate WMS
+
+rnote right #Gold
+system log:
+<color Green>WindowManager: CREATE SURFACE</color>
+
+mDrawState=<b><color Red>DRAW_PENDING</color></b>
+end note
+
+activate WindowStateAnimator
+WindowStateAnimator -> WindowSurfaceController : new WindowSurfaceController
+deactivate WindowStateAnimator
+
+activate WindowSurfaceController
+WindowSurfaceController -> SurfaceControl : build()
+deactivate WindowSurfaceController
+
+activate SurfaceControl
+SurfaceControl -> SurfaceControl : new SurfaceControl
+activate SurfaceControl
+
+
+SurfaceControl -> android_view_SurfaceControl : nativeCreate()
+deactivate SurfaceControl
+deactivate SurfaceControl
+
+activate android_view_SurfaceControl
+android_view_SurfaceControl -> android_view_SurfaceSession : android_view_SurfaceSession_getClient()
+activate android_view_SurfaceControl #aqua
+activate android_view_SurfaceSession
+return client
+deactivate android_view_SurfaceSession
+deactivate android_view_SurfaceControl
+
+android_view_SurfaceControl -> SurfaceComposerClient : client->createSurfaceChecked()
+activate android_view_SurfaceControl #aqua
+deactivate android_view_SurfaceControl
+deactivate android_view_SurfaceControl
+
+activate SurfaceComposerClient
+SurfaceComposerClient -> Client : mClient->createSurface()
+activate SurfaceComposerClient
+activate Client
+Client -> SurfaceFlinger : mFlinger->createLayer()
+activate SurfaceFlinger
+deactivate SurfaceFlinger
+deactivate Client
+deactivate SurfaceComposerClient
+deactivate SurfaceComposerClient
+
+
+WMS -> WindowSurfacePlacer : performSurfacePlacement()
+activate WMS
+deactivate WMS
+
+activate WindowSurfacePlacer
+WindowSurfacePlacer -> WindowSurfacePlacer : performSurfacePlacementLoop()
+deactivate WMS
+activate WindowSurfacePlacer
+WindowSurfacePlacer ->RootWindowContainer : performSurfacePlacement()
+deactivate WindowSurfacePlacer
+deactivate WindowSurfacePlacer
+
+activate RootWindowContainer
+RootWindowContainer -> RootWindowContainer : performSurfacePlacementNoTrace()
+activate RootWindowContainer
+RootWindowContainer -> RootWindowContainer : applySurfaceChangesTransaction()
+activate RootWindowContainer
+RootWindowContainer -> DisplayContent : applySurfaceChangesTransaction()
+activate DisplayContent
+deactivate DisplayContent
+deactivate RootWindowContainer
+deactivate RootWindowContainer
+deactivate RootWindowContainer
+
+
+ViewRootImpl -> ViewRootImpl : performMeasure()
+activate ViewRootImpl #RoyalBlue
+deactivate ViewRootImpl
+
+note left #aqua
+<b> 自定义View三部曲
+<b> 1.memasure:测量View的宽高
+<b> 2.layout:计算当前View位置
+<b> 3.draw:视图绘制
+end note
+
+ViewRootImpl -> ViewRootImpl : performLayout()
+activate ViewRootImpl #RoyalBlue
+deactivate ViewRootImpl
+
+ViewRootImpl -> ViewRootImpl : performDraw()
+activate ViewRootImpl #RoyalBlue
+
+ViewRootImpl -> ViewRootImpl : draw()
+activate ViewRootImpl #Coral
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+
+WindowManagerImpl -> ViewRootImpl : RenderThread回调
+ViewRootImpl -> ViewRootImpl : pendingDrawFinished()
+activate ViewRootImpl #Coral
+ViewRootImpl -> ViewRootImpl : reportDrawFinished()
+activate ViewRootImpl
+ViewRootImpl -> Session : finishDrawing()
+rnote right
+App通知WMS绘制完成
+endnote
+activate ViewRootImpl
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+deactivate ViewRootImpl
+
+
+activate Session
+Session -> WMS : finishDrawingWindow()
+deactivate Session
+
+rnote right #Gold
+system log:
+<color Green>WindowManager: finishDrawingWindow: Window{...} mDrawState=DRAW_PENDING</color>
+end note
+
+activate WMS
+WMS -> WindowState : finishDrawing()
+activate WMS
+deactivate WMS
+
+
+
+activate WindowState
+WindowState -> WindowStateAnimator : finishDrawingLocked()
+
+activate WindowStateAnimator
+deactivate WindowStateAnimator
+deactivate WindowState
+
+rnote right #Gold
+mDrawState=<b><color Red>COMMIT_DRAW_PENDING</color></b>
+end note
+
+WMS -> WindowSurfacePlacer : mWindowPlacerLocked.requestTraversal()
+activate WMS
+deactivate WMS
+deactivate WMS
+
+activate WindowSurfacePlacer
+WindowSurfacePlacer -> WindowSurfacePlacer : performSurfacePlacement()
+activate WindowSurfacePlacer
+WindowSurfacePlacer -> WindowSurfacePlacer : performSurfacePlacement(false)
+activate WindowSurfacePlacer
+WindowSurfacePlacer -> WindowSurfacePlacer : performSurfacePlacementLoop()
+activate WindowSurfacePlacer
+WindowSurfacePlacer -> RootWindowContainer : performSurfacePlacement()
+deactivate WindowSurfacePlacer
+deactivate WindowSurfacePlacer
+deactivate WindowSurfacePlacer
+deactivate WindowSurfacePlacer
+
+activate RootWindowContainer
+RootWindowContainer -> RootWindowContainer : performSurfacePlacementNoTrace()
+note right
+刷新界面，更新所有的layout/draw/Surface
+end note
+activate RootWindowContainer
+RootWindowContainer -> RootWindowContainer : applySurfaceChangesTransaction()
+activate RootWindowContainer
+RootWindowContainer -> DisplayContent : applySurfaceChangesTransaction()
+rnote left
+applySurfaceChangesTransaction做了三件事
+1.performLayout计算所有窗口的准确位置
+2.mApplySurfaceChangesTransaction刷新window绘制状态
+3.prepareSurface操作surface显示/隐藏/位置/缩放
+end note
+deactivate RootWindowContainer
+deactivate RootWindowContainer
+activate DisplayContent
+RootWindowContainer -> RootWindowContainer : checkAppTransitionReady()
+rnote left
+<b><color OrangeRed>应用第一帧已经绘制完成，可以开始做动画了</color></b>
+end note
+activate RootWindowContainer
+deactivate RootWindowContainer
+deactivate RootWindowContainer
+
+DisplayContent -> WindowContainer : forAllWindows()
+activate WindowContainer
+WindowContainer -> WindowState : forAllWindows()
+activate WindowState
+WindowState -> WindowState : applyInOrderWithImeWindows()
+activate WindowState
+deactivate WindowState
+return apply() : callback
+
+WindowContainer -> DisplayContent : accept()
+activate DisplayContent
+deactivate WindowState
+deactivate WindowContainer
+
+DisplayContent -> WindowStateAnimator : commitFinishDrawingLocked()
+rnote right #Gold
+mDrawState=<b><color Red>READY_TO_SHOW</color></b>
+end note
+activate WindowStateAnimator
+deactivate DisplayContent
+deactivate DisplayContent
+WindowStateAnimator -> WindowState : performShowLocked()
+rnote left #Gold
+mDrawState=<b><color Red>HAS_DRAW</color></b>
+end note
+activate WindowState
+deactivate WindowState
+deactivate WindowStateAnimator
+
+
+
+
+
+@enduml

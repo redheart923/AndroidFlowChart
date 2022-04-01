@@ -1,0 +1,48 @@
+@startuml
+autonumber "(##)"
+activate SurfaceFlinger
+SurfaceFlinger-> SurfaceFlinger : onMessageInvalidate()
+activate SurfaceFlinger
+SurfaceFlinger-> InputManager : updateInputFlinger()
+deactivate SurfaceFlinger
+deactivate SurfaceFlinger
+activate InputManager
+InputManager -> InputDispatcher : setInputWindows()
+deactivate InputManager
+activate InputDispatcher
+InputDispatcher -> InputDispatcher : setInputWindowsLocked()
+activate InputDispatcher
+InputDispatcher -> InputDispatcher : onFocusChangedLocked()
+activate InputDispatcher
+InputDispatcher -> InputDispatcher : enqueueFocusEventLocked()
+activate InputDispatcher
+InputDispatcher -> EventEntry : <b><color #DC143C>new FocusEntry()</color></b>
+deactivate InputDispatcher
+
+activate EventEntry
+EventEntry -> EventEntry: <b><color #DC143C>mInboundQueue</color></b>.insert()
+activate EventEntry
+deactivate EventEntry
+deactivate EventEntry
+
+deactivate InputDispatcher
+deactivate InputDispatcher
+deactivate InputDispatcher
+
+== InputDispatcherThread Looper ==
+InputDispatcher -> InputDispatcher : dispatchOnce()
+activate InputDispatcher
+InputDispatcher -> InputDispatcher : dispatchOnceInnerLocked()
+activate InputDispatcher
+InputDispatcher -> InputDispatcher : dispatchFocusLocked()
+note right
+ <b><color Green>events log:</color></b>
+ <b><color Green>input_focus: [Focus leaving...</color></b>
+ <b><color Green>input_focus: [Focus entering...</color></b>
+end note
+activate InputDispatcher
+deactivate InputDispatcher
+deactivate InputDispatcher
+deactivate InputDispatcher
+
+@enduml
